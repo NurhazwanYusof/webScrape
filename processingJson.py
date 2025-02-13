@@ -34,7 +34,7 @@ def insert_json_into_FlightInfo(json_data):
 
     def flatten_json(prefix, obj):
         for key, value in obj.items():
-            if key == "additionalFlightInfo":
+            if key == "additionalFlightInfo":       # Skip additionalFlightInfo to save space
                 break
             if key == "flightState":
                 columns.append(f"{prefix}{key}")
