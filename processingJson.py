@@ -5,13 +5,16 @@ from datetime import datetime
 # Database path
 db_path = 'database/jsonStore.db'
 
+
 def get_unprocessed_json():
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, responseJson FROM rawJson WHERE processed_at IS NULL")
+    cursor.execute("SELECT id, responseJson FROM rawJson WHERE processed_at IS NULL AND LENGTH(responseJson)>12")        #ignoring empty JSON in responseJson
+    print("Fetching DB successful")
     rows = cursor.fetchall()
     conn.close()
     return rows
+
 
 def update_processed_at(id):
     conn = sqlite3.connect(db_path)
@@ -21,12 +24,17 @@ def update_processed_at(id):
     conn.commit()
     conn.close()
 
+
 def insert_json_into_FlightInfo(json_data):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
+    print("converting table to Python object")
+
     # Parse the JSON data and ignore the initial "data" key
     data = json.loads(json_data)["data"]
+
+    print("flattening JSON")
 
     # Flatten JSON and generate columns and values
     columns = []
@@ -34,7 +42,7 @@ def insert_json_into_FlightInfo(json_data):
 
     def flatten_json(prefix, obj):
         for key, value in obj.items():
-            if key == "additionalFlightInfo":       # Skip additionalFlightInfo to save space
+            if key == "additionalFlightInfo":  # Skip additionalFlightInfo to save space
                 break
             if key == "flightState":
                 columns.append(f"{prefix}{key}")
@@ -51,12 +59,14 @@ def insert_json_into_FlightInfo(json_data):
     # Generate SQL query
     columns_str = ', '.join(columns)
     placeholders_str = ', '.join(['?'] * len(values))
+
     sql = f"INSERT INTO FlightInfo ({columns_str}) VALUES ({placeholders_str})"
 
     # Execute SQL query
     cursor.execute(sql, values)
     conn.commit()
     conn.close()
+
 
 def main():
     try:
@@ -71,6 +81,7 @@ def main():
             print("No unprocessed JSON data found in rawJson table.")
     except Exception as e:
         print(f"An error occurred: {e}")
+
 
 if __name__ == "__main__":
     main()
